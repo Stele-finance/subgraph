@@ -390,8 +390,10 @@ export function handleSwap(event: SwapEvent): void {
   swap.challengeId = event.params.challengeId
   swap.user = event.params.user
   swap.fromAsset = event.params.fromAsset
+  swap.fromAssetSymbol = fetchTokenSymbol(event.params.fromAsset, event.block.timestamp)
   swap.toAsset = event.params.toAsset
-  
+  swap.toAssetSymbol = fetchTokenSymbol(event.params.toAsset, event.block.timestamp)
+
   // Convert raw amounts to formatted amounts
   let fromTokenDecimals = fetchTokenDecimals(event.params.fromAsset, event.block.timestamp)
   let toTokenDecimals = fetchTokenDecimals(event.params.toAsset, event.block.timestamp)
@@ -416,23 +418,15 @@ export function handleSwap(event: SwapEvent): void {
     swap.toAmount = BigDecimal.fromString("0")
   }
   
-  // // Debug: Log basic swap info
-  // log.info('[SWAP DEBUG] Starting swap processing: challengeId={}, user={}, fromAsset={}, toAsset={}, fromAmount={}, toAmount={}', [
-  //   event.params.challengeId.toString(),
-  //   event.params.user.toHexString(),
-  //   event.params.fromAsset.toHexString(),
-  //   event.params.toAsset.toHexString(),
-  //   swap.fromAmount.toString(),
-  //   swap.toAmount.toString()
-  // ])  
-  
   // Debug: Log basic swap info
-  log.info('[SWAP DEBUG] Starting swap processing: fromAsset={}, toAsset={}, fromAmount={}, toAmount={}', [
+  log.info('[SWAP DEBUG] Starting swap processing: challengeId={}, user={}, fromAsset={}, toAsset={}, fromAmount={}, toAmount={}', [
+    event.params.challengeId.toString(),
+    event.params.user.toHexString(),
     event.params.fromAsset.toHexString(),
     event.params.toAsset.toHexString(),
     swap.fromAmount.toString(),
     swap.toAmount.toString()
-  ])
+  ])  
   
   let ethPriceInUSD = getCachedEthPriceUSD(event.block.timestamp)
   

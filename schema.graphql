@@ -111,7 +111,9 @@ type Swap @entity(immutable: true) {
   challengeId: BigInt! # uint256
   user: Bytes! # address
   fromAsset: Bytes! # address
+  fromAssetSymbol: String!
   toAsset: Bytes! # address
+  toAssetSymbol: String!
   fromAmount: BigDecimal! # formatted amount (not raw)
   fromPriceUSD: BigDecimal! # uint256
   toPriceUSD: BigDecimal! # uint256
