@@ -1,8 +1,11 @@
 {
   "mainnet": {
     "Stele": {
-      "address": "0xed43c99DD66601D388d226d894abB9EFd2a4b51C",
-      "startBlock": 22737779
+      "address": "0xA14214598Bbe93dB512a08C2c45fD6a9487E63f0",
+      "startBlock": 22741920
+    },
+    "SteleGovernor": {
+      "address": "0x07632cB8376Cfed5Bad166513C2299226d78f442"
     }
   }
 }
