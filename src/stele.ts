@@ -397,8 +397,9 @@ export function handleSwap(event: SwapEvent): void {
   let toTokenDecimals = fetchTokenDecimals(event.params.toAsset, event.block.timestamp)
   
   if (fromTokenDecimals !== null) {
+    let decimalDivisor = exponentToBigDecimal(fromTokenDecimals)
     let fromAmount = BigDecimal.fromString(event.params.fromAmount.toString())
-      .div(BigDecimal.fromString((10 ** fromTokenDecimals.toI32()).toString()))
+      .div(decimalDivisor)
     swap.fromAmount = fromAmount
   } else {
     log.warning('[SWAP] Failed to get decimals for fromAsset: {}', [event.params.fromAsset.toHexString()])
@@ -406,18 +407,27 @@ export function handleSwap(event: SwapEvent): void {
   }
   
   if (toTokenDecimals !== null) {
+    let decimalDivisor = exponentToBigDecimal(toTokenDecimals)
     let toAmount = BigDecimal.fromString(event.params.toAmount.toString())
-      .div(BigDecimal.fromString((10 ** toTokenDecimals.toI32()).toString()))
+      .div(decimalDivisor)
     swap.toAmount = toAmount
   } else {
     log.warning('[SWAP] Failed to get decimals for toAsset: {}', [event.params.toAsset.toHexString()])
     swap.toAmount = BigDecimal.fromString("0")
   }
   
+  // // Debug: Log basic swap info
+  // log.info('[SWAP DEBUG] Starting swap processing: challengeId={}, user={}, fromAsset={}, toAsset={}, fromAmount={}, toAmount={}', [
+  //   event.params.challengeId.toString(),
+  //   event.params.user.toHexString(),
+  //   event.params.fromAsset.toHexString(),
+  //   event.params.toAsset.toHexString(),
+  //   swap.fromAmount.toString(),
+  //   swap.toAmount.toString()
+  // ])  
+  
   // Debug: Log basic swap info
-  log.info('[SWAP DEBUG] Starting swap processing: challengeId={}, user={}, fromAsset={}, toAsset={}, fromAmount={}, toAmount={}', [
-    event.params.challengeId.toString(),
-    event.params.user.toHexString(),
+  log.info('[SWAP DEBUG] Starting swap processing: fromAsset={}, toAsset={}, fromAmount={}, toAmount={}', [
     event.params.fromAsset.toHexString(),
     event.params.toAsset.toHexString(),
     swap.fromAmount.toString(),
