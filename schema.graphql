@@ -19,6 +19,7 @@ type Challenge @entity(immutable: false) {
   investorCounter: BigInt!
   seedMoney: BigInt!
   entryFee: BigInt!
+  maxAssets: BigInt!
   rewardAmountUSD: BigInt!
   isActive: Boolean!
   topUsers: [Bytes!]!

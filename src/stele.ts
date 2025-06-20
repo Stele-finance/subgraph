@@ -226,6 +226,7 @@ export function handleCreate(event: CreateEvent): void {
     challenge.seedMoney = event.params.seedMoney
     challenge.entryFee = event.params.entryFee
   }
+  challenge.maxAssets = BigInt.fromI32(event.params.maxAssets)
   challenge.rewardAmountUSD = BigInt.fromI32(0)
   challenge.isActive = true
   challenge.topUsers = []
@@ -329,15 +330,22 @@ export function handleJoin(event: JoinEvent): void {
   investor.seedMoneyUSD = BigDecimal.fromString(event.params.seedMoney.toString())
   investor.currentUSD = investor.seedMoneyUSD  // At join time, current value equals seed money
   investor.tokens = [stele.usdToken]  
-  investor.tokensAmount = [event.params.seedMoney.toBigDecimal()]
-
+  
   // Handle tokensDecimals properly - fetch decimals and provide fallback
   let usdTokenDecimals = fetchTokenDecimals(stele.usdToken, event.block.timestamp)
   if (usdTokenDecimals !== null) {
     investor.tokensDecimals = [usdTokenDecimals]
+    // Format amount using decimals for consistency with swap handler
+    let decimalDivisor = exponentToBigDecimal(usdTokenDecimals)
+    let formattedAmount = BigDecimal.fromString(event.params.seedMoney.toString()).div(decimalDivisor)
+    investor.tokensAmount = [formattedAmount]
   } else {
     log.error('[JOIN] Failed to get decimals for USD token, using default 18: {}', [stele.usdToken.toHexString()])
     investor.tokensDecimals = [BigInt.fromI32(18)] // default to 18 decimals
+    // Use default 18 decimals for formatting
+    let decimalDivisor = exponentToBigDecimal(BigInt.fromI32(18))
+    let formattedAmount = BigDecimal.fromString(event.params.seedMoney.toString()).div(decimalDivisor)
+    investor.tokensAmount = [formattedAmount]
   }
   
   // Handle tokensSymbols properly - provide fallback
