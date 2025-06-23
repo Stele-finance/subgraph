@@ -47,6 +47,7 @@ export function activeChallengesSnapshot(event: ethereum.Event): void {
   if (activeChallengesSnapshot == null) {
     activeChallengesSnapshot = new ActiveChallengesSnapshot(dayID.toString())
   }
+  activeChallengesSnapshot.timestamp = event.block.timestamp
 
   let one_week_investorCounter = activeChallenges.one_week_investorCounter
   let one_week_rewardAmountUSD = activeChallenges.one_week_rewardAmountUSD

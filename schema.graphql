@@ -191,6 +191,7 @@ type ChallengeSnapshot @entity(immutable: false) {
 
 type ActiveChallengesSnapshot @entity(immutable: false) {
   id: ID!
+  timestamp: BigInt!
   totalParticipants: BigInt!
   totalRewards: BigInt!
   one_week_investorCounter: BigInt!
