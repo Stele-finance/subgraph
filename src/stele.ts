@@ -287,6 +287,35 @@ export function handleCreate(event: CreateEvent): void {
   }
   activeChallenges.save()
   activeChallengesSnapshot(event)
+
+  // Initialize ranking for the new challenge with default values
+  let ranking = new Ranking(event.params.challengeId.toString())
+  ranking.challengeId = event.params.challengeId.toString()
+  ranking.seedMoney = challenge.seedMoney
+  
+  // Initialize with default values based on maxAssets
+  let rankingSize = challenge.maxAssets.toI32()
+  let topUsers: Bytes[] = []
+  let scores: BigDecimal[] = []
+  let profitRatios: BigDecimal[] = []
+  
+  for (let i = 0; i < rankingSize; i++) {
+    topUsers.push(Bytes.fromHexString("0x00000000")) // zero address
+    scores.push(BigDecimal.fromString("0")) // initial score 0
+    profitRatios.push(BigDecimal.fromString("0")) // initial profit ratio 0
+  }
+  
+  ranking.topUsers = topUsers
+  ranking.scores = scores
+  ranking.profitRatios = profitRatios
+  ranking.updatedAtTimestamp = event.block.timestamp
+  ranking.updatedAtBlockNumber = event.block.number
+  ranking.updatedAtTransactionHash = event.transaction.hash
+  ranking.save()
+
+  log.info('[CREATE] Initialized ranking for challenge {}', [
+    event.params.challengeId.toString()
+  ])
 }
 
 export function handleJoin(event: JoinEvent): void {
@@ -624,13 +653,123 @@ export function handleRegister(event: RegisterEvent): void {
   register.transactionHash = event.transaction.hash
   register.save()
 
+  let ethPriceInUSD = getCachedEthPriceUSD(event.block.timestamp)
+
   let investor = Investor.load(getInvestorID(event.params.challengeId, event.params.user))
   if (investor == null) {
     log.debug('[REGISTER] Investor not found, Investor : {}', [getInvestorID(event.params.challengeId, event.params.user)])
     return
   }
+  investor.updatedAtTimestamp = event.block.timestamp
+
+  // get tokens data from getUserPortfolio function
+  let steleContract = SteleContract.bind(Address.fromBytes(Address.fromHexString(STELE_ADDRESS)))
+  let tokenAddresses: Bytes[] = []
+  let tokensAmount: BigDecimal[] = []
+  
+  let portfolioResult = steleContract.try_getUserPortfolio(event.params.challengeId, event.params.user)
+  if (portfolioResult.reverted) {
+    log.warning('[REGISTER] Failed to get user portfolio for user {} in challenge {}', [
+      event.params.user.toHexString(),
+      event.params.challengeId.toString()
+    ])
+    return
+  }
+  
+  // Debug: Log raw portfolio data from getUserPortfolio
+  log.info('[REGISTER DEBUG] getUserPortfolio success for user {} in challenge {}', [
+    event.params.user.toHexString(),
+    event.params.challengeId.toString()
+  ])
+  
+  log.info('[REGISTER DEBUG] Raw portfolio data - {} tokens found', [
+    portfolioResult.value.value0.length.toString()
+  ])
+  
+  for (let i = 0; i < portfolioResult.value.value0.length; i++) {
+    log.info('[REGISTER DEBUG] Token {}: address={}, rawAmount={}', [
+      i.toString(),
+      portfolioResult.value.value0[i].toHexString(),
+      portfolioResult.value.value1[i].toString()
+    ])
+  }
+  
+  tokenAddresses = portfolioResult.value.value0.map<Bytes>(addr => Bytes.fromHexString(addr.toHexString()))
+  tokensAmount = portfolioResult.value.value1.map<BigDecimal>(amount => BigDecimal.fromString(amount.toString()))
+
+  let tokensDeAmount: BigDecimal[] = []  // For calculation - decimal amounts
+  let tokensDecimals: BigInt[] = []
+  let tokensSymbols: string[] = []
+  
+  for (let i = 0; i < tokenAddresses.length; i++) {
+    let token = tokenAddresses[i]
+    let amount = tokensAmount[i]  // Raw amount from contract
+    let deAmount = BigDecimal.fromString("0")
+    
+    const decimals = fetchTokenDecimals(token, event.block.timestamp)
+    if (decimals === null) {
+      log.debug('[REGISTER] Failed to get decimals for token: {}', [token.toHexString()])
+      tokensDeAmount.push(BigDecimal.fromString("0"))
+      tokensDecimals.push(BigInt.fromI32(18)) // default to 18
+      tokensSymbols.push("UNKNOWN")
+      continue
+    }
+    
+    const tokenDecimal = exponentToBigDecimal(decimals)
+    deAmount = amount.div(tokenDecimal)
+    tokensDeAmount.push(deAmount)
+    tokensDecimals.push(decimals)
+    
+    const symbol = fetchTokenSymbol(token, event.block.timestamp)
+    tokensSymbols.push(symbol || "UNKNOWN")
+  }
+
+  // get total tokens price in USD with sum of tokens
+  let totalPriceUSD = BigDecimal.fromString("0")
+  for (let i = 0; i < tokenAddresses.length; i++) {
+    let token = tokenAddresses[i]
+    let deAmount = tokensDeAmount[i]  // Use decimal amount for price calculation
+    let tokenPriceETH = getTokenPriceETH(Address.fromBytes(token), event.block.timestamp)
+    if (tokenPriceETH === null) {
+      log.debug('[REGISTER] User {} in challenge {} Failed to get price ETH for token: {}', 
+        [event.params.user.toHexString(), event.params.challengeId.toString(), token.toHexString()])
+      continue
+    }
+    const amountETH = deAmount.times(tokenPriceETH)
+    const amountUSD = amountETH.times(ethPriceInUSD)
+    totalPriceUSD = totalPriceUSD.plus(amountUSD)
+  }
+  
+  // Debug: Log the token amounts being stored
+  log.info('[REGISTER DEBUG] User {} in challenge {} - Portfolio update:', [
+    event.params.user.toHexString(), 
+    event.params.challengeId.toString()
+  ])
+  
+  for (let i = 0; i < tokenAddresses.length; i++) {
+    log.info('[REGISTER DEBUG] Token {}: rawAmount={}, decimalAmount={}, symbol={}', [
+      tokenAddresses[i].toHexString(),
+      tokensAmount[i].toString(),
+      tokensDeAmount[i].toString(),
+      tokensSymbols[i]
+    ])
+  }
+  
+  log.info('[REGISTER DEBUG] Previous currentUSD: {}, New currentUSD: {}', [
+    investor.currentUSD.toString(),
+    totalPriceUSD.truncate(5).toString()
+  ])
+  
+  investor.tokens = tokenAddresses
+  investor.tokensAmount = tokensDeAmount
+  investor.tokensDecimals = tokensDecimals
+  investor.tokensSymbols = tokensSymbols
+  investor.currentUSD = totalPriceUSD.truncate(5)
+  investor.profitUSD = investor.currentUSD.minus(investor.seedMoneyUSD).truncate(5)
+  investor.profitRatio = investor.profitUSD.div(investor.seedMoneyUSD).truncate(5)
   investor.isClosed = true
   investor.save()
+  investorSnapshot(event.params.challengeId, event.params.user, event)
 
   // Debug: Log the performance value from Register event
   log.info('[REGISTER DEBUG] Register event - User: {}, Performance: {}', [
@@ -639,7 +778,6 @@ export function handleRegister(event: RegisterEvent): void {
   ])
 
   // Update ranking by calling getRanking from Stele contract
-  let steleContract = SteleContract.bind(Address.fromBytes(Address.fromHexString(STELE_ADDRESS)))
   let rankingResult = steleContract.try_getRanking(event.params.challengeId)
   
   if (!rankingResult.reverted) {
@@ -706,18 +844,28 @@ export function handleRegister(event: RegisterEvent): void {
     let profitRatios: BigDecimal[] = []
     for (let i = 0; i < scores.length; i++) {
       if (!seedMoneyFormatted.equals(BigDecimal.fromString("0"))) {
-        // Calculate profit ratio: (formattedScore - seedMoneyFormatted) / seedMoneyFormatted * 100
-        let profitDecimal = scores[i].minus(seedMoneyFormatted)
-        let profitRatio = profitDecimal.div(seedMoneyFormatted).times(BigDecimal.fromString("100")).truncate(4)
-        profitRatios.push(profitRatio)
-        
-        // Debug: Log profit ratio calculation
-        log.info('[REGISTER DEBUG] User {} - Score: {}, SeedMoney: {}, ProfitRatio: {}%', [
-          topUsers[i].toHexString(),
-          scores[i].toString(),
-          seedMoneyFormatted.toString(),
-          profitRatio.toString()
-        ])
+        // If score is exactly 0 (no data or initial state), set profit ratio to 0
+        if (scores[i].equals(BigDecimal.fromString("0"))) {
+          profitRatios.push(BigDecimal.fromString("0"))
+          
+          // Debug: Log when setting profit ratio to 0 for zero score
+          log.info('[REGISTER DEBUG] User {} - Score is 0, Setting ProfitRatio to 0%', [
+            topUsers[i].toHexString()
+          ])
+        } else {
+          // Calculate profit ratio: (formattedScore - seedMoneyFormatted) / seedMoneyFormatted * 100
+          let profitDecimal = scores[i].minus(seedMoneyFormatted)
+          let profitRatio = profitDecimal.div(seedMoneyFormatted).times(BigDecimal.fromString("100")).truncate(4)
+          profitRatios.push(profitRatio)
+          
+          // Debug: Log profit ratio calculation
+          log.info('[REGISTER DEBUG] User {} - Score: {}, SeedMoney: {}, ProfitRatio: {}%', [
+            topUsers[i].toHexString(),
+            scores[i].toString(),
+            seedMoneyFormatted.toString(),
+            profitRatio.toString()
+          ])
+        }
       } else {
         profitRatios.push(BigDecimal.fromString("0"))
       }
