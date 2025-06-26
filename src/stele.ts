@@ -293,14 +293,14 @@ export function handleCreate(event: CreateEvent): void {
   ranking.challengeId = event.params.challengeId.toString()
   ranking.seedMoney = challenge.seedMoney
   
-  // Initialize with default values based on maxAssets
-  let rankingSize = challenge.maxAssets.toI32()
+  // Initialize with default values for top 5 ranking
+  let rankingSize = 5 // Fixed ranking size for top 5 users
   let topUsers: Bytes[] = []
   let scores: BigDecimal[] = []
   let profitRatios: BigDecimal[] = []
   
   for (let i = 0; i < rankingSize; i++) {
-    topUsers.push(Bytes.fromHexString("0x00000000")) // zero address
+    topUsers.push(Bytes.fromHexString("0x0000000000000000000000000000000000000000")) // zero address (20 bytes)
     scores.push(BigDecimal.fromString("0")) // initial score 0
     profitRatios.push(BigDecimal.fromString("0")) // initial profit ratio 0
   }
