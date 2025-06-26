@@ -471,14 +471,14 @@
     "name": "getRanking",
     "outputs": [
       {
-        "internalType": "address[10]",
+        "internalType": "address[5]",
         "name": "topUsers",
-        "type": "address[10]"
+        "type": "address[5]"
       },
       {
-        "internalType": "uint256[10]",
+        "internalType": "uint256[5]",
         "name": "scores",
-        "type": "uint256[10]"
+        "type": "uint256[5]"
       }
     ],
     "stateMutability": "view",
@@ -569,6 +569,19 @@
     "name": "joinChallenge",
     "outputs": [],
     "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "joinChallengeBonus",
+    "outputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "stateMutability": "view",
     "type": "function"
   },
   {
@@ -754,19 +767,6 @@
       }
     ],
     "name": "setToken",
-    "outputs": [],
-    "stateMutability": "nonpayable",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "address",
-        "name": "_usdToken",
-        "type": "address"
-      }
-    ],
-    "name": "setUSDToken",
     "outputs": [],
     "stateMutability": "nonpayable",
     "type": "function"
