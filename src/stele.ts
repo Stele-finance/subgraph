@@ -384,7 +384,7 @@ export function handleJoin(event: JoinEvent): void {
   // At join time, profit should be zero
   investor.profitUSD = BigDecimal.fromString("0")
   investor.profitRatio = BigDecimal.fromString("0")
-  investor.isClosed = false
+  investor.isRegistered = false
   investor.save()
 
   investorSnapshot(event.params.challengeId, event.params.user, event)
@@ -767,7 +767,7 @@ export function handleRegister(event: RegisterEvent): void {
   investor.currentUSD = totalPriceUSD.truncate(5)
   investor.profitUSD = investor.currentUSD.minus(investor.seedMoneyUSD).truncate(5)
   investor.profitRatio = investor.profitUSD.div(investor.seedMoneyUSD).truncate(5)
-  investor.isClosed = true
+  investor.isRegistered = true
   investor.save()
   investorSnapshot(event.params.challengeId, event.params.user, event)
 
