@@ -8,9 +8,9 @@ dataSources:
     name: Stele
     network: mainnet
     source:
-      address: "0xe362d7C3D7feB2E5a81c5D132eF135Fb7F9D719F"
+      address: "0xbFa6d9a5b9b02867FdCD2A0a2641759Aa4789C9f"
       abi: Stele
-      startBlock: 22785422
+      startBlock: 22832467
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9
@@ -72,9 +72,9 @@ dataSources:
     name: SteleGovernor
     network: mainnet
     source:
-      address: "0x53Ed5DaB444c5459cd2E1E86b4781563f8dEd275"
+      address: "0x57b0150f4435c1524926c9b999ee72b178852a24"
       abi: SteleGovernor
-      startBlock: 22785318
+      startBlock: 22832459
     mapping:
       kind: ethereum/events
       apiVersion: 0.0.9

@@ -1,7 +1,7 @@
 import { BigInt, BigDecimal, Address } from '@graphprotocol/graph-ts'
 
 // //mainnet
-export const STELE_ADDRESS = '0xe362d7C3D7feB2E5a81c5D132eF135Fb7F9D719F'
+export const STELE_ADDRESS = '0xbFa6d9a5b9b02867FdCD2A0a2641759Aa4789C9f'
 export const UNISWAP_V3_FACTORY = '0x1F98431c8aD98523631AE4a59f267346ea31F984'
 export const WETH = '0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2'
 export const USDC = '0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48'
