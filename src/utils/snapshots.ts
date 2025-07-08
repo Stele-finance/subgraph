@@ -3,6 +3,7 @@ import {
   Stele,
   Challenge,
   ChallengeSnapshot,
+  ChallengeWeeklySnapshot,
   ActiveChallengesSnapshot,
   ActiveChallengesWeeklySnapshot,
   Investor,
@@ -34,6 +35,29 @@ export function challengeSnapshot(
   challengeSnapshot.topUsers = challenge.topUsers
   challengeSnapshot.score = challenge.score
   challengeSnapshot.save()
+}
+
+export function challengeWeeklySnapshot(
+  challengeId: string,
+  event: ethereum.Event
+): void {
+  let challenge = Challenge.load(challengeId)
+  if (!challenge) return
+
+  let timestamp = event.block.timestamp.toI32()
+  let weekID = timestamp / (86400 * 7) // rounded to 7-day intervals
+
+  let challengeWeeklySnapshot = ChallengeWeeklySnapshot.load(challengeId + "-" + weekID.toString())
+  if (challengeWeeklySnapshot == null) {
+    challengeWeeklySnapshot = new ChallengeWeeklySnapshot(challengeId + "-" + weekID.toString())
+  }
+  challengeWeeklySnapshot.challengeId = challenge.challengeId
+  challengeWeeklySnapshot.timestamp = event.block.timestamp
+  challengeWeeklySnapshot.investorCount = challenge.investorCounter
+  challengeWeeklySnapshot.rewardAmountUSD = challenge.rewardAmountUSD
+  challengeWeeklySnapshot.topUsers = challenge.topUsers
+  challengeWeeklySnapshot.score = challenge.score
+  challengeWeeklySnapshot.save()
 }
 
 export function activeChallengesSnapshot(event: ethereum.Event): void {
