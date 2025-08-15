@@ -1,3 +1,5 @@
+# Claude Code Configuration
+
 ## Project Overview
 The Graph subgraph for the Stele investment challenge platform. This subgraph indexes events from the Stele smart contract and SteleGovernor governance contract on Ethereum mainnet.
 
